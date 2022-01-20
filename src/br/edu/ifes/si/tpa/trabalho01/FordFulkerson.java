@@ -9,6 +9,25 @@ public class FordFulkerson {
     
     public FordFulkerson(RedeFluxo G, int s, int t){
         V = G.V();
+        validar(s);
+        validar(t);
+        if (s == t)            throw new IllegalArgumentException("Fonte é igual a sumidouro");
+        if (!eViavel(G, s, t)) throw new IllegalArgumentException("Fluxo inicial é inviável");
+
+        valor = excesso(G, t);
+        while (temAumentoNoCaminho(G, s, t)) {
+
+            double garrafa = Double.POSITIVE_INFINITY;
+            for (int v = t; v != s; v = bordaPara[v].outro(v)) {
+                garrafa = Math.min(garrafa, bordaPara[v].capacidadeResidualPara(v));
+            }
+
+            for (int v = t; v != s; v = bordaPara[v].outro(v)) {
+                bordaPara[v].addFluxoResidualPara(v, garrafa); 
+            }
+
+            valor += garrafa;
+        }
     }
     
     public double valor(){
