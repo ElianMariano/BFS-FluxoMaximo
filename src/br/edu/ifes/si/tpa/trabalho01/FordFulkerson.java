@@ -43,6 +43,35 @@ public class FordFulkerson {
         if (v < 0 || v >= V)
             throw new IllegalArgumentException(String.format("Vertice %d não está entre 0 e %d", v, (V-1)));
     }
+
+    private boolean hasAugmentingPath(RedeFluxo G, int s, int t) {
+        bordaPara = new RedeFluxo[G.V()];
+        marcado= new boolean[G.V()];
+
+        // breadth-first search
+        Queue<Integer> queue = new Queue<Integer>();
+        queue.enqueue(s);
+        marcado[s] = true;
+        while (!queue.isEmpty() && !marcado[t]) {
+            int v = queue.dequeue();
+
+            for (ArestaFluxo e : G.adj(v)) {
+                int w = e.other(v);
+
+                // if residual capacity from v to w
+                if (e.residualCapacityTo(w) > 0) {
+                    if (!marcado[w]) {
+                        bordaPara[w] = e;
+                        marcado[w] = true;
+                        queue.enqueue(w);
+                    }
+                }
+            }
+        }
+
+        // is there an augmenting path?
+        return marcado[t];
+    }
     
     private double excesso(RedeFluxo G, int v){
         double excesso = 0.0;
