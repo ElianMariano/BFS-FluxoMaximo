@@ -81,4 +81,40 @@ public class FordFulkerson {
         }
         return excesso;
     }
+
+    private boolean isFeasible(RedeFluxo G, int s, int t) {
+
+        // check that capacity constraints are satisfied
+        for (int v = 0; v < G.V(); v++) {
+            for (RedeFluxo e : G.adj(v)) {
+                if (e.flow() < -FLOATING_POINT_EPSILON || e.flow() > e.capacity() + FLOATING_POINT_EPSILON) {
+                    System.err.println("A borda não atende às restrições de capacidade: " + e);
+                    return false;
+                }
+            }
+        }
+
+        
+        // check that net flow into a vertex equals zero, except at source and sink
+        if (Math.abs(valor + excess(G, s)) > FLOATING_POINT_EPSILON) {
+            System.err.println("Excess at source = " + excess(G, s));
+            System.err.println("Max flow         = " + valor);
+            return false;
+        }
+        if (Math.abs(valor - excess(G, t)) > FLOATING_POINT_EPSILON) {
+            System.err.println("Excesso    = " + excess(G, t));
+            System.err.println("Fluxo Máximo         = " + valor);
+            return false;
+        }
+        for (int v = 0; v < G.V(); v++) {
+            if (v == s || v == t) continue;
+            else if (Math.abs(excess(G, v)) > FLOATING_POINT_EPSILON) {
+                System.err.println("Fluxo líquido de" + v + " não é igual a zero");
+                return false;
+            }
+        }
+        return true;
+    }
+
+
 }
