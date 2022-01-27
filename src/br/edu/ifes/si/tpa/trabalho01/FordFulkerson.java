@@ -1,18 +1,19 @@
 package br.edu.ifes.si.tpa.trabalho01;
 
-
 public class FordFulkerson {
     private static final double FLOATING_POINT_EPSILON = 1E-11;
     private final int V;
     private boolean[] marcado;
     private double valor;
-    
-    public FordFulkerson(RedeFluxo G, int s, int t){
+
+    public FordFulkerson(RedeFluxo G, int s, int t) {
         V = G.V();
         validar(s);
         validar(t);
-        if (s == t)            throw new IllegalArgumentException("Fonte é igual a sumidouro");
-        if (!eViavel(G, s, t)) throw new IllegalArgumentException("Fluxo inicial é inviável");
+        if (s == t)
+            throw new IllegalArgumentException("Fonte é igual a sumidouro");
+        if (!eViavel(G, s, t))
+            throw new IllegalArgumentException("Fluxo inicial é inviável");
 
         valor = excesso(G, t);
         while (temAumentoNoCaminho(G, s, t)) {
@@ -23,30 +24,30 @@ public class FordFulkerson {
             }
 
             for (int v = t; v != s; v = bordaPara[v].outro(v)) {
-                bordaPara[v].addFluxoResidualPara(v, garrafa); 
+                bordaPara[v].addFluxoResidualPara(v, garrafa);
             }
 
             valor += garrafa;
         }
     }
-    
-    public double valor(){
+
+    public double valor() {
         return valor;
     }
-    
-    public boolean emCorte(int v){
+
+    public boolean emCorte(int v) {
         validar(v);
         return marcado[v];
     }
-    
-    private void validar(int v){
+
+    private void validar(int v) {
         if (v < 0 || v >= V)
-            throw new IllegalArgumentException(String.format("Vertice %d não está entre 0 e %d", v, (V-1)));
+            throw new IllegalArgumentException(String.format("Vertice %d não está entre 0 e %d", v, (V - 1)));
     }
 
     private boolean hasAugmentingPath(RedeFluxo G, int s, int t) {
         bordaPara = new RedeFluxo[G.V()];
-        marcado= new boolean[G.V()];
+        marcado = new boolean[G.V()];
 
         // breadth-first search
         Queue<Integer> queue = new Queue<Integer>();
@@ -72,13 +73,47 @@ public class FordFulkerson {
         // is there an augmenting path?
         return marcado[t];
     }
-    
-    private double excesso(RedeFluxo G, int v){
+
+    private double excesso(RedeFluxo G, int v) {
         double excesso = 0.0;
-        for (ArestaFluxo e : G.adj(v)){
-            if (v == e.de()) excesso -= e.fluxo();
-            else             excesso += e.fluxo();
+        for (ArestaFluxo e : G.adj(v)) {
+            if (v == e.de())
+                excesso -= e.fluxo();
+            else
+                excesso += e.fluxo();
         }
         return excesso;
+    }
+
+    private boolean check(RedeFluxo G, int s, int t) {
+        if (!eViavel(G, s, t)) {
+            System.err.println("Fluxo é inviavel");
+            return false;
+        }
+
+        if (!emCorte(s)) {
+            System.err.println("a fonte " + s + " não está do lado da fonte do corte mínimo");
+            return false;
+        }
+
+        if (!emCorte(t)) {
+            System.err.println("o coletor " + t + " está no lado da fonte do corte mínimo");
+            return false;
+        }
+
+        double ValorMinimoDeCorte = 0.0;
+        for (int v = 0; v < G.V(); v++) {
+            for (ArestaFluxo e : G.adj(v)) {
+                if ((v == e.de()) && emCorte(e.de()) && !emCorte(e.para()))
+                    ValorMinimoDeCorte += e.capacidade();
+            }
+        }
+
+        if (Math.abs(ValorMinimoDeCorte - valor) > FLOATING_POINT_EPSILON) {
+            System.err.println("Valor de Fluxo Maximo = " + valor + ", Valor de Corte Minimo = " + ValorMinimoDeCorte);
+            return false;
+        }
+
+        return true;
     }
 }
