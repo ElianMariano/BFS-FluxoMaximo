@@ -110,7 +110,7 @@ public class FordFulkerson {
         }
         for (int v = 0; v < G.V(); v++) {
             if (v == s || v == t) continue;
-            else if (Math.abs(excess(G, v)) > FLOATING_POINT_EPSILON) {
+            else if (Math.abs(excesso(G, v)) > FLOATING_POINT_EPSILON) {
                 System.err.println("Fluxo líquido de" + v + " não é igual a zero");
                 return false;
             }
