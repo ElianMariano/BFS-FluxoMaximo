@@ -1,12 +1,17 @@
 package br.edu.ifes.si.tpa.trabalho01;
 
+import java.util.LinkedList;
+import java.util.PriorityQueue;
 import java.util.Queue;
 
 
 public class FordFulkerson {
+    private static final String NEWLINE = System.getProperty("line.separator");
+    
     private static final double FLOATING_POINT_EPSILON = 1E-11;
     private final int V;
     private boolean[] marcado;
+    private ArestaFluxo[] bordaPara;
     private double valor;
     
     public FordFulkerson(RedeFluxo G, int s, int t){
@@ -30,6 +35,8 @@ public class FordFulkerson {
 
             valor += garrafa;
         }
+        
+        assert check(G, s, t);
     }
     
     public double valor(){
@@ -47,25 +54,25 @@ public class FordFulkerson {
     }
 
     private boolean temAumentoNoCaminho(RedeFluxo G, int s, int t) {
-        bordaPara = new RedeFluxo[G.V()];
-        marcado= new boolean[G.V()];
+        bordaPara = new ArestaFluxo[G.V()];
+        marcado = new boolean[G.V()];
 
         // breadth-first search
-        Queue<Integer> queue = new Queue<Integer>();
-        queue.enqueue(s);
+        Queue<Integer> queue = new LinkedList<Integer>();
+        queue.add(s);
         marcado[s] = true;
         while (!queue.isEmpty() && !marcado[t]) {
-            int v = queue.dequeue();
+            int v = queue.remove();
 
             for (ArestaFluxo e : G.adj(v)) {
-                int w = e.other(v);
+                int w = e.outro(v);
 
                 // if residual capacity from v to w
-                if (e.residualCapacityTo(w) > 0) {
+                if (e.capacidadeResidualPara(w) > 0) {
                     if (!marcado[w]) {
                         bordaPara[w] = e;
                         marcado[w] = true;
-                        queue.enqueue(w);
+                        queue.remove(w);
                     }
                 }
             }
@@ -84,12 +91,12 @@ public class FordFulkerson {
         return excesso;
     }
 
-    private boolean isFeasible(RedeFluxo G, int s, int t) {
+    private boolean eViavel(RedeFluxo G, int s, int t) {
 
         // check that capacity constraints are satisfied
         for (int v = 0; v < G.V(); v++) {
-            for (RedeFluxo e : G.adj(v)) {
-                if (e.flow() < -FLOATING_POINT_EPSILON || e.flow() > e.capacity() + FLOATING_POINT_EPSILON) {
+            for (ArestaFluxo e : G.adj(v)) {
+                if (e.fluxo() < -FLOATING_POINT_EPSILON || e.fluxo() > e.capacidade() + FLOATING_POINT_EPSILON) {
                     System.err.println("A borda não atende às restrições de capacidade: " + e);
                     return false;
                 }
@@ -148,5 +155,42 @@ public class FordFulkerson {
         }
 
         return true;
+    }
+     
+    public static void main(String[] args) {
+//        StringBuilder builder = new StringBuilder();
+         
+        // create flow network with V vertices and E edges
+        In in = new In(args[0]);
+        RedeFluxo G = new RedeFluxo(in);
+        System.out.println(G);
+
+        int s = 0;
+        int t = G.V() - 1;
+
+        // compute maximum flow and minimum cut
+        FordFulkerson maxflow = new FordFulkerson(G, s, t);
+        System.out.println("Fluxo máximo de " + s + " para " + t);
+//        builder.append("Fluxo máximo de " + s + " para " + t + NEWLINE);
+        for (int v = 0; v < G.V(); v++) {
+            for (ArestaFluxo e : G.adj(v)) {
+                if ((v == e.de()) && e.fluxo() > 0)
+//                    builder.append("   " + e + NEWLINE);
+                    System.out.println("   " + e);
+            }
+        }
+
+        // print min-cut
+//        StdOut.print("Min cut: ");
+
+        for (int v = 0; v < G.V(); v++) {
+//            if (maxflow.emCorte(v)) builder.append(v + " ");
+            if (maxflow.emCorte(v)) System.out.println(v + " ");;
+        }
+//        StdOut.println();
+        System.out.println("");
+
+//        builder.append("Valor do fluxo máximo = " +  maxflow.valor());
+        System.out.println("Valor do fluxo máximo = " +  maxflow.valor());
     }
 }
