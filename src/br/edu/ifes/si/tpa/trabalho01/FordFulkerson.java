@@ -1,5 +1,6 @@
 package br.edu.ifes.si.tpa.trabalho01;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -12,26 +13,30 @@ import java.util.Queue;
 public class FordFulkerson {
     private static final String NEWLINE = System.getProperty("line.separator");
     
-    private static final double FLOATING_POINT_EPSILON = 1E-11;
     // Quantidade de vertices
     private final int V;
     // Vertices que estão marcados na Rede de Fluxo
     private boolean[] marcado;
-    // 
-    private ArestaFluxo[] bordaPara;
+    // Caminho de aumento atual
+    private List<ArestaFluxo> caminhoAumento;
     // Valor final da rede de fluxo
     private double valor;
+    // Rede de Fluxo
+    RedeFluxo rede;
     
     public FordFulkerson(RedeFluxo G, int s, int t){
         // Obtêm a quantidade de vertices
         V = G.V();
         // Inicia o valor como 0
         valor = 0;
-        // Inicia o array da variavel marcado
-        marcado = new boolean[G.V()];
+        // Inicia a rede de fluxo
+        rede = G;
 
-        // Calcular o FordFulkerson
-        temAumentoNoCaminho(G, s, t);
+        while(temCaminhoDeAumento(s, t)){
+            atualizarCaminhoAumento(s, t);
+            
+            valor += calcularCapacidadeGargalo();
+        }
     }
     
     // Retorna o valor final do algotitmo FordFulkerson
@@ -40,33 +45,104 @@ public class FordFulkerson {
     }
     
     // Procura um almento no caminho
-    private boolean temAumentoNoCaminho(RedeFluxo G, int s, int t) {
-        bordaPara = new ArestaFluxo[G.V()];
+    private boolean temCaminhoDeAumento(int s, int t) {
+        caminhoAumento = new ArrayList<>();
+        // Inicia o array da variavel marcado
+        marcado = new boolean[rede.V()];
         
         // Marca se ja verificou o vertice
-        boolean[] verificado = new boolean[G.V()];
-
-        // breadth-first search
-        Queue<Integer> queue = new LinkedList<Integer>();
-        queue.add(s);
+        boolean[] verificado = new boolean[rede.V()];
         marcado[s] = true;
-        System.out.println(String.format("W: %d", s));
         
         // Vertice atual
         int atual = s;
+        int vertice = 0;
         while(!marcado[t]){
-            for (ArestaFluxo e : G.adj(atual)){
-                for (ArestaFluxo e2 : G.adj(atual)){
-                    int w = e2.para(); //e.outro(atual);
-                    if (!verificado[w] && !marcado[w]){ // Verificar a viabilidade 
-                        marcado[w] = true;
-                        System.out.println(String.format("W: %d", w));
+            int novo_atual = 0;
+            boolean temProximo = true;
+            for (ArestaFluxo e : rede.adj(atual)){
+                vertice = e.outro(atual); // V = 1º vert n verifica 
+                for (ArestaFluxo e2 : rede.adj(atual)){
+                    int w = e2.outro(atual); //e.outro(atual);
+                    boolean a = e2.capacidadeResidualPara(w) > 0;
+                    double b = e2.capacidadeResidualPara(w);
+                    if (!verificado[w] && (e2.capacidadeResidualPara(w) > 0)){ // Verificar a viabilidade 
+                        if (!marcado[w]){
+                            marcado[w] = true;
+                            caminhoAumento.add(e2);
+                        }
                     }
                 }
                 verificado[atual] = true;
-                atual++;
+                
+                for (ArestaFluxo e2 : rede.adj(vertice)){
+                    int w = e2.outro(vertice); //e.outro(atual);
+                    boolean a = e2.capacidadeResidualPara(w) > 0;
+                    double b = e2.capacidadeResidualPara(w);
+                    if (!verificado[w] && (e2.capacidadeResidualPara(w) > 0)){ // Verificar a viabilidade 
+                        if (!marcado[w]){
+                            marcado[w] = true;
+                            caminhoAumento.add(e2);
+                        }
+                    }
+                }
+                verificado[vertice] = true;// Atual = primeiro V verificado
+            }
+            
+            atual++;
+        }
+        
+        return marcado[t];
+    }
+    
+    // Calcula a capacidade de gargalo do caminho de aumento
+    private double calcularCapacidadeGargalo(){
+        double gargalo = 0.0;
+        
+        // Calcula a capacidade de gargalo do caminho
+        for (ArestaFluxo e : caminhoAumento){
+            gargalo = (gargalo != 0) ? Math.min(gargalo, e.capacidade()) : e.capacidade();
+        }
+        
+        // Atualiza o fluxo da rede
+        RedeFluxo nova = new RedeFluxo(V);        
+        for (ArestaFluxo e : rede.arestas()){
+            boolean adicionou = false;
+            for (ArestaFluxo e2 : caminhoAumento){
+                if (e.equals(e2)) {
+                    ArestaFluxo aresta = new ArestaFluxo(e.de(), e.para(), e.capacidade(), gargalo);
+                    nova.addAresta(aresta);
+                    adicionou = true;
+                }
+            }
+            
+            if (!adicionou) nova.addAresta(e);
+        }
+        
+        // Redefine a rede atual
+        rede = nova;
+        
+        return gargalo;
+    }
+    
+    // Remover arestas que não fazem parte do caminho de aumento
+    private void atualizarCaminhoAumento(int s, int t){
+        int ultimo_vertice = t;
+        
+        for (int i = caminhoAumento.size()-1;i >= s;i--){
+            ArestaFluxo e = caminhoAumento.get(i);
+            
+            if (e.para() == ultimo_vertice){
+                ultimo_vertice = e.de();
+            }
+            else{
+                caminhoAumento.remove(e);
             }
         }
+    }
+    
+    // Verifica a viabilidade do caminho de aumento escolhido
+    private boolean verificarViabilidade(ArestaFluxo a, ArestaFluxo b){ 
         return true;
     }
     
