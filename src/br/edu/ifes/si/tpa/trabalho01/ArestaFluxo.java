@@ -29,6 +29,10 @@ public class ArestaFluxo {
         this.fluxo      = e.fluxo;
     }
 
+    ArestaFluxo() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public int de() {
         return v;
     }  

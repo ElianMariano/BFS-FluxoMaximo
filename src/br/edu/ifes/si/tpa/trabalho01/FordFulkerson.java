@@ -1,18 +1,9 @@
 package br.edu.ifes.si.tpa.trabalho01;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Queue;
-
 
 public class FordFulkerson {
-    private static final String NEWLINE = System.getProperty("line.separator");
-    
     // Quantidade de vertices
     private final int V;
     // Vertices que estão marcados na Rede de Fluxo
@@ -31,12 +22,29 @@ public class FordFulkerson {
         valor = 0;
         // Inicia a rede de fluxo
         rede = G;
+        caminhoAumento = new LinkedList<ArestaFluxo>();
 
         while(temCaminhoDeAumento(s, t)){
             atualizarCaminhoAumento(s, t);
             
             valor += calcularCapacidadeGargalo();
         }
+        
+        mostrarResultado(s, t);
+    }
+    
+    private void mostrarResultado(int s, int t){
+        System.out.println(String.format("Fluxo máximo de %d para %d", s, t));
+        for (int i = s;i < t-1;i++){
+            for (ArestaFluxo e : rede.adj(i)){
+                int w = e.para();
+                if (i != w && e.fluxo() != 0){
+                    System.out.println(String.format("%d->%d %.2f/%.2f", i, w, e.fluxo(), e.capacidade()));
+                }
+            }
+        }
+        
+        System.out.println(String.format("Valor do fluxo máximo: %.2f", valor));
     }
     
     // Retorna o valor final do algotitmo FordFulkerson
@@ -46,53 +54,38 @@ public class FordFulkerson {
     
     // Procura um almento no caminho
     private boolean temCaminhoDeAumento(int s, int t) {
-        caminhoAumento = new ArrayList<>();
         // Inicia o array da variavel marcado
         marcado = new boolean[rede.V()];
         
         // Marca se ja verificou o vertice
-        boolean[] verificado = new boolean[rede.V()];
         marcado[s] = true;
         
-        // Vertice atual
-        int atual = s;
-        int vertice = 0;
-        while(!marcado[t]){
-            int novo_atual = 0;
-            boolean temProximo = true;
-            for (ArestaFluxo e : rede.adj(atual)){
-                vertice = e.outro(atual); // V = 1º vert n verifica 
-                for (ArestaFluxo e2 : rede.adj(atual)){
-                    int w = e2.outro(atual); //e.outro(atual);
-                    boolean a = e2.capacidadeResidualPara(w) > 0;
-                    double b = e2.capacidadeResidualPara(w);
-                    if (!verificado[w] && (e2.capacidadeResidualPara(w) > 0)){ // Verificar a viabilidade 
-                        if (!marcado[w]){
-                            marcado[w] = true;
-                            caminhoAumento.add(e2);
-                        }
+        LinkedList<Integer> queue
+            = new LinkedList<Integer>();
+        queue.add(s);
+ 
+        // Faz a procura BFS
+        while (queue.size() != 0) {
+            int atual = queue.poll();
+ 
+            for (ArestaFluxo e : rede.adj(atual)) {
+                int w = e.outro(atual);
+                if (marcado[w] == false && e.capacidadeResidualPara(w) > 0) {
+                    // Se ja estiver no final, retorna verdadeiro
+                    // e salva o caminho de aumento
+                    if (w == t) {
+                        caminhoAumento.add(e);
+                        return true;
                     }
+                    queue.add(w);
+                    caminhoAumento.add(e);
+                    marcado[w] = true;
                 }
-                verificado[atual] = true;
-                
-                for (ArestaFluxo e2 : rede.adj(vertice)){
-                    int w = e2.outro(vertice); //e.outro(atual);
-                    boolean a = e2.capacidadeResidualPara(w) > 0;
-                    double b = e2.capacidadeResidualPara(w);
-                    if (!verificado[w] && (e2.capacidadeResidualPara(w) > 0)){ // Verificar a viabilidade 
-                        if (!marcado[w]){
-                            marcado[w] = true;
-                            caminhoAumento.add(e2);
-                        }
-                    }
-                }
-                verificado[vertice] = true;// Atual = primeiro V verificado
             }
-            
-            atual++;
         }
-        
-        return marcado[t];
+ 
+        // Se não achou o caminho de aumento retorna falso
+        return false;
     }
     
     // Calcula a capacidade de gargalo do caminho de aumento
@@ -126,7 +119,7 @@ public class FordFulkerson {
     }
     
     // Remover arestas que não fazem parte do caminho de aumento
-    private void atualizarCaminhoAumento(int s, int t){
+    private void atualizarCaminhoAumento(int s, int t){;
         int ultimo_vertice = t;
         
         for (int i = caminhoAumento.size()-1;i >= s;i--){
@@ -141,28 +134,11 @@ public class FordFulkerson {
         }
     }
     
-    // Verifica a viabilidade do caminho de aumento escolhido
-    private boolean verificarViabilidade(ArestaFluxo a, ArestaFluxo b){ 
-        return true;
-    }
-    
-    // Mostra o caminho de aumento no console
-    private void mostraCaminhoDeAumento(Queue caminho){
-        int i = 0;
-        System.out.print(String.format("%d: ", i));
-        while (!caminho.isEmpty()){
-            System.out.print(String.format("%d", caminho.remove()));
-            
-            if (caminho.size() >= 1) System.out.print("->");
-        }
-        System.out.print("\n");
-    }
-    
     public static void main(String[] args) {
         In in = new In(args[0]);
         RedeFluxo G = new RedeFluxo(in);
         System.out.println(G);
         
-        FordFulkerson maxflow = new FordFulkerson(G, 0, 7);
+        FordFulkerson fluxomaximo = new FordFulkerson(G, 0, 7);
     }
 }
